@@ -1,0 +1,153 @@
+from __future__ import unicode_literals
+import os
+from flask import Flask, request, abort
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
+import configparser
+import random
+
+app = Flask(__name__)
+
+# LINE 聊天機器人的基本資料
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+line_bot_api = LineBotApi(config.get('line-bot', 'channel_access_token'))
+handler = WebhookHandler(config.get('line-bot', 'channel_secret'))
+
+
+# 接收 LINE 的資訊
+@app.route("/callback", methods=['POST'])
+def callback():
+    signature = request.headers['X-Line-Signature']
+
+    body = request.get_data(as_text=True)
+    app.logger.info("Request body: " + body)
+
+    try:
+        print(body, signature)
+        handler.handle(body, signature)
+
+    except InvalidSignatureError:
+        abort(400)
+
+    return 'OK'
+
+
+@handler.add(MessageEvent, message=TextMessage)
+def prettyEcho(event):
+    sendString = ""
+    if "抽塔羅" in event.message.text or "塔羅" in event.message.text:
+        random_number, description = divinationBlocks()
+        sendString = "抽到的塔羅牌是：{}\n說明內容是：{}".format(random_number, description)
+    elif "隨機選號碼" in event.message.text:
+        random_numbers = random_select_numbers()
+        sendString = "隨機選取的两个数字是：{}".format(random_numbers)
+    else:
+        sendString = event.message.text
+
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=sendString)
+    )
+
+
+# 定義一個函式來隨機選取塔羅牌和對應的說明
+def divinationBlocks():
+    description_dict = {
+        0: "愚人\n天真浪漫的的新手，代表著新的開始和不成熟，具有冒險的勇氣和好奇心",
+        1: "魔術師\n象徵著精神世界和現實世界的連接，事情不再只有想像，而開始有了創造",
+        2: "女祭司\n聆聽自己的內心和運用智慧解決問題",
+        3: "皇后\n",
+        4: "皇帝\n",
+        5: "教皇\n",
+        6: "戀人\n",
+        7: "戰車\n",
+        8: "力量\n",
+        9: "隱者\n",
+        10: "命運之輪\n",
+        11: "正義\n",
+        12: "倒吊人\n",
+        13: "死神\n",
+        14: "節制\n",
+        15: "惡魔\n",
+        16: "高塔\n",
+        17: "星星\n",
+        18: "月亮\n",
+        19: "太陽\n",
+        20: "審判\n",
+        21: "世界\n",
+        22: "聖杯一\n",
+        23: "聖杯二\n",
+        24: "聖杯三\n",
+        25: "聖杯四\n",
+        26: "聖杯五\n",
+        27: "聖杯六\n",
+        28: "聖杯七\n",
+        29: "聖杯八\n",
+        30: "聖杯九\n",
+        31: "聖杯十\n",
+        32: "聖杯侍者\n",
+        33: "聖杯騎士\n",
+        34: "聖杯皇后\n",
+        35: "聖杯國王\n",
+        36: "星幣一\n",
+        37: "星幣二\n",
+        38: "星幣三\n",
+        39: "星幣四\n",
+        40: "星幣五\n",
+        41: "星幣六\n",
+        42: "星幣七\n",
+        43: "星幣八\n",
+        44: "星幣九\n",
+        45: "星幣十\n",
+        46: "星幣侍者\n",
+        47: "星幣騎士\n",
+        48: "星幣皇后\n",
+        49: "星幣國王\n",
+        50: "權杖一\n",
+        51: "權杖二\n",
+        52: "權杖三\n",
+        53: "權杖四\n",
+        54: "權杖五\n",
+        55: "權杖六\n",
+        56: "權杖七\n",
+        57: "權杖八\n",
+        58: "權杖九\n",
+        59: "權杖十\n",
+        60: "權杖侍者\n",
+        61: "權杖騎士\n",
+        62: "權杖皇后\n",
+        63: "權杖國王\n",
+        64: "寶劍一\n",
+        65: "寶劍二\n",
+        66:"寶劍三\n",
+        67:"寶劍四\n",
+        68: "寶劍五\n",
+        69: "寶劍六\n",
+        70: "寶劍七\n",
+        71: "寶劍八\n",
+        72: "寶劍九\n",
+        73: "寶劍十\n",
+        74: "寶劍侍者\n",
+        75: "寶劍騎士\n",
+        76: "寶劍皇后\n",
+        77: "寶劍國王\n",
+        78: "寶劍十\n",
+
+
+    }
+    random_number = random.randint(0,78)
+    description = description_dict.get(random_number, "找不到對應的說明內容")
+    return random_number, description
+
+# 新增一个函数来随机选取两个不重复的数字
+def random_select_numbers():
+    numbers = random.sample(range(79), 2)
+    return numbers
+
+
+
+if __name__ == "__main__":
+    app.run()
